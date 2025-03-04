@@ -324,7 +324,7 @@
             document.body.style.backgroundColor = "#4f0000";
             document.querySelector(".matrix-overlay").style.display = "none";
             
-            // Remplacer le texte ASCII et le centrer complètement
+            // Remplacer le texte ASCII (titre au centre) et le centrer complètement
             const asciiArt = document.querySelector(".ascii-art");
             asciiArt.innerHTML = "<span class='main' style='color: #ff0000; font-size: 30px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: block; width: auto;'>error 502 : can't reach gateway ???</span>";
             
@@ -332,15 +332,55 @@
             document.getElementById("tutorial").style.color = "#ff0000";
             document.getElementById("menu").style.color = "#ff0000";
             
+            // Remplacer le contenu de la tutorial-box par le nouveau contenu
+            // (attention à échapper correctement les backticks ou à les retirer)
+            document.getElementById("tutorial").innerHTML = `
+            |‾‾‾‾‾‾‾‾‾‾\\‾‾‾\\‾‾\\‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\\‾‾‾‾‾‾‾‾‾‾‾‾|
+            |   toToriel.bat   \\            ____            ⨯ ⨯ ⨯  |
+            |                   \\_____________    __________________|
+            |                                                       |
+            |    ¡                  r                               |
+            |  ⱽø c¡ v tr£ cu  r$    ;   ~                          |
+            |          ø         3u vø¡                      ¡ønn£z |
+            |  ¡l vøu$        d3 $@   r c3 qù£ vø     $£l£ct        |
+            |                p£rm£ttr@                              |
+            |                                    u$                 |
+            |                                       $£l£ct¡øñ :     |
+            |Pøür             vøtr3                                 |
+            |                                        _-__-_         |
+            |             d£$c3ndr3                 || m  ||        |
+            |                                  ||_-__||             |
+            |                                  |/__-_\\|             |
+            |            vøtr3                                      |
+            |   Møñt3r        t¡øñ : $£l£c                          |
+            |                ______                                 |
+            |        Pøür   || p  ||                                |
+            |                                         ||____||      |
+            |                                         |/____\\|      |
+            |                                                       |
+            |  v@l¡d£r             Pøür                             |
+            |                                                       |
+            |                                                       |
+            |                                 ______                |
+            |           vøtr3                || o  ||               |
+            |   $£l£ct¡øñ :                      ||____||           |
+            |        .-.                         |/____\\|           |
+            |       (0.0)                                      ñ£   |
+            |     '=.|m|.='                             ßøñ         |
+            |     .='\\\`"=.                   v¡$¡t£ !               |
+             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+            `;
+            
             // Modifier la sélection en rouge foncé dans le menu
             updateMenuColors();
 
-            // Ajouter la nouvelle div pour l'effet Matrix inversé
+            // Ajouter la nouvelle div pour l'effet Matrix inversé (rouge)
             const redMatrix = document.createElement("canvas");
             redMatrix.classList.add("matrix-text-red");
             document.body.appendChild(redMatrix);
             startRedMatrixEffect(redMatrix);
-        }
+}
+
 
         function updateMenuColors() {
             const menuItems = document.querySelectorAll("#menu span");
