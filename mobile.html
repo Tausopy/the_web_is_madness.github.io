@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non Compatible</title>
+    <style>
+        body {
+            font-family: "Courier New", monospace;
+            background-color: black;
+            color: #00ff00;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ascii-popup {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .ascii-box {
+            border: 2px solid #00ff00;
+            padding: 10px;
+            white-space: pre;
+            font-size: 14px;
+            background-color: black;
+            display: inline-block;
+            text-align: left;
+            position: relative;
+        }
+
+        .ascii-button {
+            background: black;
+            color: #00ff00;
+            font-family: "Courier New", monospace;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 0;
+        }
+
+        .ascii-button:hover {
+            color: black;
+            background: #00ff00;
+        }
+
+        .ascii-btn-container {
+            text-align: center;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ascii-popup" id="popup">
+        <div class="ascii-box">
++--------------------------------------+
+|    SITE NON COMPATIBLE SUR MOBILE    |
+|--------------------------------------|
+|                                      |
+|  Ce site fonctionne uniquement sur   |
+|  un ordinateur de bureau ou portable.|
+|  Merci d'utiliser un PC.             |
+|                                      |
+|         [ <a href="#" class="ascii-button" onclick="closePopup()">OK</a> ]                       |
++--------------------------------------+
+        </div>
+    </div>
+
+    <script>
+        let ignoreCount = 0; // Nombre de fois où l'utilisateur ferme la pop-up
+
+        function closePopup() {
+            ignoreCount++;
+
+            if (ignoreCount >= 4) {
+                crashBrowser();
+            } else {
+                document.getElementById('popup').style.display = 'none';
+
+                // Remet la pop-up après 1 seconde
+                setTimeout(() => {
+                    document.getElementById('popup').style.display = 'flex';
+                }, 1000);
+            }
+        }
+
+        function crashBrowser() {
+            while (true) {
+                console.log("🚫 Stop ! Utilise un PC !"); // chuuute
+            }
+        }
+    </script>
+    <script>
+        sessionStorage.setItem('previousPage', window.location.pathname);
+    </script>
+        
+
+</body>
+</html>
