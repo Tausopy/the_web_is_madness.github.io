@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home ASCII</title>
+    <style>
+        body {
+            background-color: #111f16;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            overflow: hidden;
+            cursor: none;
+        }
+        .matrix-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            animation: fadeOut 1.5s ease-out 3s forwards;
+        }
+        .matrix-text {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            color: #0c8001;
+            font-size: 20px;
+            white-space: pre;
+            overflow: hidden;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0.1; }
+        }
+        .ascii-art {
+            white-space: pre;
+            font-size: 20px;
+            line-height: 0.57;
+            position: relative;
+            z-index: 1;
+        }
+        .ascii-art .main {
+            color: #14d402;
+        }
+        .ascii-art .shadow {
+            color: #0c8001;
+        }
+        .tutorial-box {
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%) translateY(-20px);
+            color: #14d402;
+            font-size: 16px;
+            cursor: none;
+            white-space: pre;
+            opacity: 0;
+            transition: opacity 2s ease-in-out, transform 2s ease-in-out;
+        }
+        .menu {
+            position: absolute;
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #14d402;
+            font-size: 20px;
+            white-space: pre;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+            text-align: right;
+        }
+        .selected {
+            color: #0c8001;
+        }
+        @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-3px); }
+        50% { transform: translateX(3px); }
+        75% { transform: translateX(-2px); }
+        100% { transform: translateX(0); }
+        }
+        .shake {
+            display: inline-block;
+            animation: shake 0.5s ease-in-out;
+        }
+        .matrix-text-red {
+            animation: fadeOutRed 1.5s ease-out 3s forwards;
+        }
+        @keyframes fadeOutRed {
+            from { opacity: 1; }
+            to { opacity: 0.1; }
+        }
+        .red-mode #menu span {
+        color: #ff0000;
+        }
+        .red-mode .selected {
+        color: #a00000 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-overlay">
+        <canvas class="matrix-text"></canvas>
+    </div>
+    <div class="ascii-art">
+        <span class="main">██<span class="shadow">╗</span>  ██<span class="shadow">╗</span> ██████<span class="shadow">╗</span> ███<span class="shadow">╗</span>   ███<span class="shadow">╗</span>███████<span class="shadow">╗</span></span><br>
+        <span class="main">██<span class="shadow">║</span>  ██<span class="shadow">║</span>██<span class="shadow">╔═══</span>██<span class="shadow">╗</span>████<span class="shadow">╗</span> ████<span class="shadow">║</span>██<span class="shadow">╔════╝</span></span><br>
+        <span class="main">███████<span class="shadow">║</span>██<span class="shadow">║</span>   ██<span class="shadow">║</span>██<span class="shadow">╔</span>████<span class="shadow">╔</span>██<span class="shadow">║</span>█████<span class="shadow">╗  </span></span><br>
+        <span class="main">██<span class="shadow">╔══</span>██<span class="shadow">║</span>██<span class="shadow">║</span>   ██<span class="shadow">║</span>██<span class="shadow">║╚</span>██<span class="shadow">╔╝</span>██<span class="shadow">║</span>██<span class="shadow">╔══╝</span></span><br>
+        <span class="main">██<span class="shadow">║</span>  ██<span class="shadow">║╚</span>██████<span class="shadow">╔╝</span>██<span class="shadow">║ ╚═╝</span> ██<span class="shadow">║</span>███████<span class="shadow">╗</span></span><br>
+        <span class="shadow">╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝</span>
+    </div>
+    <div class="tutorial-box" id="tutorial">
+    |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
+    |   Tutoriel.txt   \                            ₋ ◻ ⨯  |
+    |                   \___________________________________|
+    |                                                       |
+    |                                                       |
+    |  Voici votre curseur :          >                     |
+    |                                                       |
+    |  Il vous permettra de savoir ce que vous sélectionnez |
+    |                                                       |
+    |                                                       |
+    |                                                       |
+    |  Pour descendre votre selection :                     |
+    |                                          ______       |
+    |                                         || ↓  ||      |
+    |                                         ||____||      |
+    |                                         |/____\|      |
+    |                                                       |
+    |  Pour Monter votre selection :                        |
+    |                                          ______       |
+    |                                         || ↑  ||      |
+    |                                         ||____||      |
+    |                                         |/____\|      |
+    |                                                       |
+    |  Pour valider votre selection :                       |
+    |                                          ______       |
+    |                                         || ↵  ||      |
+    |                                         ||____||      |
+    |                                         |/____\|      |
+    |                                                       |
+    |      \                                                |
+    |       \ _ /\                                          |
+    |       (· ·)                        Bonne visite !     |
+    |     .(  o  ).                                         |
+     ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+    </div>
+
+    <div class="menu" id="menu">
+        Tableau de bord<br>
+        À propos<br>
+        Projets<br>
+        Petit jeux
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOMContentLoaded: Script chargé.");
+
+        const previousPage = sessionStorage.getItem('previousPage');
+        console.log("Page précédente:", previousPage);
+
+        const fastMode = previousPage && 
+            (previousPage.includes("a_propos.html") || 
+            previousPage.includes("projets.html") || 
+            previousPage.includes("petit_jeux.html") || 
+            previousPage.includes("tableau_de_bord_.html"));
+
+        console.log("Mode rapide activé:", fastMode);
+
+        // Effet Matrix (toujours vitesse normale)
+        const canvas = document.querySelector('.matrix-text');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const columns = Math.floor(canvas.width / 10);
+        const drops = Array(columns).fill(0);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drops.forEach((y, i) => {
+                ctx.fillStyle = '#0c8001';
+                ctx.font = '20px monospace';
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                ctx.fillText(text, i * 10, y * 20);
+
+                if (y * 20 > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                drops[i] += 1 + Math.random() * 2;
+            });
+        }
+
+        setInterval(drawMatrix, 50);  // Matrix toujours vitesse normale
+        console.log("Animation Matrix lancée en vitesse normale.");
+
+        // Affichage immédiat si fastMode
+        if (fastMode) {
+            console.log("Mode rapide détecté, affichage immédiat.");
+            document.getElementById('tutorial').style.opacity = '1';
+            document.getElementById('tutorial').style.transform = 'translateY(-50%) translateY(0)';
+            document.getElementById('menu').style.opacity = '1';
+        } else {
+            console.log("Mode normal, délai d'affichage appliqué.");
+            setTimeout(() => {
+                document.getElementById('tutorial').style.opacity = '1';
+                document.getElementById('tutorial').style.transform = 'translateY(-50%) translateY(0)';
+                console.log("Tutoriel affiché.");
+                setTimeout(() => {
+                    document.getElementById('menu').style.opacity = '1';
+                    console.log("Menu affiché.");
+                }, 3000);
+            }, 6000);
+        }
+
+        // Gestion du menu interactif
+        const menuItems = [
+            { name: "Tableau de bord", link: "tableau_de_bord_.html" },
+            { name: "À propos", link: "a_propos.html" },
+            { name: "Projets", link: "projets.html" },
+            { name: "Petit jeux", link: "petit_jeux.html" }
+        ];
+        
+        let selectedIndex = 0;
+
+        function updateMenu() {
+            console.log("Mise à jour du menu, élément sélectionné:", selectedIndex);
+            const menuElement = document.getElementById("menu");
+            menuElement.innerHTML = menuItems.map((item, index) => 
+                `<span class="${index === selectedIndex ? 'selected' : ''}" data-index="${index}">${index === selectedIndex ? '> ' : ''}${item.name}</span><br>`
+            ).join("");
+        }
+
+        document.addEventListener("keydown", (event) => {
+            console.log("Touche pressée:", event.key);
+            if (event.key === "ArrowDown") {
+                if (selectedIndex < menuItems.length - 1) {
+                    selectedIndex++;
+                } else {
+                    console.log("Bord inférieur du menu atteint, déclenchement du shake.");
+                    triggerShake(menuItems.length - 1);
+                }
+            } else if (event.key === "ArrowUp") {
+                if (selectedIndex > 0) {
+                    selectedIndex--;
+                } else {
+                    console.log("Bord supérieur du menu atteint, déclenchement du shake.");
+                    triggerShake(0);
+                }
+            } else if (event.key === "Enter") {
+                console.log("Navigation vers:", menuItems[selectedIndex].link);
+                window.location.href = menuItems[selectedIndex].link;
+            }
+            updateMenu();
+        });
+
+        function triggerShake(index) {
+            console.log("Effet de shake sur l'élément:", index);
+            setTimeout(() => {
+                const menuElement = document.querySelector(`[data-index="${index}"]`);
+                if (menuElement) {
+                    console.log("Shake appliqué à:", menuElement.innerText);
+                    menuElement.classList.remove("shake");
+                    setTimeout(() => {
+                        menuElement.classList.add("shake");
+                    }, 10);
+                } else {
+                    console.log("Élément introuvable pour le shake.");
+                }
+            }, 50);     
+        }
+
+        if (fastMode) {
+            console.log("Affichage immédiat du menu.");
+            document.getElementById("menu").style.opacity = "1";
+            updateMenu();
+        } else {
+            console.log("Délai d'affichage du menu en cours...");
+            setTimeout(() => {
+                document.getElementById("menu").style.opacity = "1";
+                updateMenu();
+                console.log("Menu affiché après délai.");
+            }, 9000);
+        }
+    });
+    </script>  
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let spacePresses = 0;
+        let firstPressTime = null;
+        let redModeActivated = false;
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === " ") {
+                const currentTime = new Date().getTime(); 
+                if (!firstPressTime) {
+                    firstPressTime = currentTime;
+                }
+                if (currentTime - firstPressTime <= 8000) {
+                    spacePresses++;
+                } else {
+                    spacePresses = 1;
+                    firstPressTime = currentTime;
+                }
+                if (spacePresses >= 10 && !redModeActivated) {
+                    activateRedMode();
+                    redModeActivated = true;
+                }
+            }
+        });
+
+        function activateRedMode() {
+            console.log("Mode rouge activé");
+            document.body.classList.add('red-mode');
+            document.body.style.backgroundColor = "#4f0000";
+            document.querySelector(".matrix-overlay").style.display = "none";
+            
+            // Remplacer le texte ASCII (titre au centre) et le centrer complètement
+            const asciiArt = document.querySelector(".ascii-art");
+            asciiArt.innerHTML = "<span class='main' style='color: #ff0000; font-size: 30px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: block; width: auto;'>error 502 : can't reach gateway ???</span>";
+            
+            // Changer la couleur du texte du tutoriel et du menu
+            document.getElementById("tutorial").style.color = "#ff0000";
+            document.getElementById("menu").style.color = "#ff0000";
+            
+            // Remplacer le contenu de la tutorial-box par le nouveau contenu
+            // (attention à échapper correctement les backticks ou à les retirer)
+            document.getElementById("tutorial").innerHTML = `
+        |‾‾‾‾‾‾‾‾‾‾\\‾‾‾\\‾‾\\‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\\‾‾‾‾‾‾‾‾‾‾‾‾|
+        |   toToriel.bat   \\            ____            ⨯ ⨯ ⨯  |
+        |                   \\_____________    __________________|
+        |                                                       |
+        |    ¡                  r                               |
+        |  ⱽø c¡ v tr£ cu  r$    ;   ~                          |
+        |          ø         3u vø¡                      ¡ønn£z |
+        |  ¡l vøu$        d3 $@   r c3 qù£ vø     $£l£ct        |
+        |                p£rm£ttr@                              |
+        |                                    u$                 |
+        |                                       $£l£ct¡øñ :     |
+        |Pøür             vøtr3                                 |
+        |                                        _-__-_         |
+        |             d£$c3ndr3                 || m  ||        |
+        |                                  ||_-__||             |
+        |                                  |/__-_\\|             |
+        |            vøtr3                                      |
+        |   Møñt3r        t¡øñ : $£l£c                          |
+        |                ______                                 |
+        |        Pøür   || p  ||                                |
+        |                                         ||____||      |
+        |                                         |/____\\|      |
+        |                                                       |
+        |  v@l¡d£r             Pøür                             |
+        |                                                       |
+        |                                                       |
+        |                                 ______                |
+        |           vøtr3                || o  ||               |
+        |   $£l£ct¡øñ :                      ||____||           |
+        |        .-.                         |/____\\|           |
+        |       (0.0)                                      ñ£   |
+        |     '=.|m|.='                             ßøñ         |
+        |     .='\\\`"=.                   v¡$¡t£ !               |
+        ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+            `;
+            
+            // Modifier la sélection en rouge foncé dans le menu
+            updateMenuColors();
+
+            // Ajouter la nouvelle div pour l'effet Matrix inversé (rouge)
+            const redMatrix = document.createElement("canvas");
+            redMatrix.classList.add("matrix-text-red");
+            document.body.appendChild(redMatrix);
+            startRedMatrixEffect(redMatrix);
+}
+
+
+        function updateMenuColors() {
+            const menuItems = document.querySelectorAll("#menu span");
+            menuItems.forEach(item => {
+                item.style.color = "#ff0000"; 
+            });
+
+            const selectedItem = document.querySelector("#menu .selected");
+            if (selectedItem) {
+                selectedItem.style.color = "#a00000";
+            }
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (redModeActivated && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+                updateMenuColors();
+            }
+        });
+
+
+        function startRedMatrixEffect(canvas) {
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const columns = Math.floor(canvas.width / 10);
+            const drops = Array(columns).fill(canvas.height / 20);
+
+            function drawMatrix() {
+                ctx.fillStyle = "rgba(79, 0, 0, 0.1)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                drops.forEach((y, i) => {
+                    ctx.fillStyle = "#ff4444";
+                    ctx.font = "20px monospace";
+                    const text = characters[Math.floor(Math.random() * characters.length)];
+                    ctx.fillText(text, i * 10, y * 20);
+
+                    if (y * 20 < 0 && Math.random() > 0.975) {
+                        drops[i] = canvas.height / 20;
+                    }
+                    drops[i] -= 1 + Math.random() * 2;
+                });
+            }
+
+            setInterval(drawMatrix, 50);
+        }
+    });
+    </script>
+</body>
+</html>
+
