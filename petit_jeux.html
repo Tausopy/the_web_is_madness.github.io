@@ -1,31 +1,562 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home ASCII</title>
-    <style>
-        body {
-            background-color: #111f16;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: monospace;
-            overflow: hidden;
-            cursor: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Petit Jeu Clicker - Bits & Clics</title>
+  <style>
+    body {
+      background-color: #111f16;
+      color: #14d402;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: monospace;
+      overflow: hidden;
+      cursor: none;
+    }
+
+    /* Conteneur principal (score + bouton) */
+    .container {
+      text-align: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    /* Affichage du score */
+    .counter {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      white-space: pre-line;
+    }
+
+    /* Bouton de clic (barre espace) */
+    .clicker {
+      border: 2px solid #14d402;
+      padding: 10px 20px;
+    }
+    .clicker.active {
+      background-color: #14d402;
+      color: #111f16;
+    }
+
+    /* Pop-up secret (score entre 100 et 150 clics) */
+    .ascii-popup {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      display: none;
+      cursor: none;
+      z-index: 1;
+    }
+    .ascii-box {
+      border: 2px solid #14d402;
+      padding: 20px;
+      white-space: pre;
+      font-size: 16px;
+      background-color: #111f16;
+      color: #14d402;
+      text-align: left;
+    }
+
+    /* Pop-up d’aide du shop (flèches + bouton V) */
+    .shop-popup {
+      position: fixed;
+      top: 5%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      display: none;
+      cursor: none;
+      z-index: 1;
+    }
+    .shop-box {
+      border: 2px solid #14d402;
+      padding: 20px;
+      white-space: pre;
+      font-size: 14px;
+      background-color: #111f16;
+      color: #14d402;
+      text-align: left;
+    }
+
+    /* Menu de triche */
+    .cheat-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(17, 31, 22, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      z-index: 3;
+    }
+    .cheat-box {
+      border: 2px solid #14d402;
+      padding: 20px;
+      background-color: #111f16;
+      color: #14d402;
+      text-align: center;
+      font-family: monospace;
+    }
+    .cheat-box input {
+      background-color: #111f16;
+      color: #14d402;
+      border: 1px solid #14d402;
+      padding: 5px;
+      margin: 10px;
+      font-family: monospace;
+      width: 80px;
+    }
+    .cheat-box button {
+      background-color: #111f16;
+      color: #14d402;
+      border: 1px solid #14d402;
+      padding: 5px 10px;
+      margin: 5px;
+      font-family: monospace;
+      cursor: pointer;
+    }
+
+    /* Le shop : positionné au niveau du bouton, décalé vers la droite */
+    .shop-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(20%, -50%);
+      width: 350px;
+      background-color: #111f16;
+      border: 2px solid #14d402;
+      padding: 10px;
+      display: none; /* S'affiche dès 200 clics */
+      font-size: 14px;
+    }
+    .shop-title {
+      text-align: center;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .shop-item {
+      margin: 4px 0;
+    }
+    .shop-cursor {
+      color: #14d402;
+      margin-right: 5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .counter {
+        font-size: 1.5rem;
+      }
+      .clicker {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+      }
+      .shop-container {
+        width: 240px;
+        font-size: 12px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div>
+  <div class="container">
+    <!-- Compteur -->
+    <div class="counter" id="counter">0</div>
+    <!-- Bouton -->
+    <div class="clicker" id="clicker">
+      +++ PRESS SPACE +++
     </div>
+    <!-- Le shop (affiché dès 200 clics) -->
+    <div class="shop-container" id="shopContainer">
+      <div class="shop-title">SHOP</div>
+      <div id="shopItems"></div>
+    </div>
+  </div>
+  
+  <!-- Pop-up secret (100 <= clics < 150) -->
+  <div class="ascii-popup" id="popup">
+    <div class="ascii-box">
++--------------------------------------+
+|  un secret se cache à 200            |
++--------------------------------------+
+    </div>
+  </div>
+  
+  <!-- Pop-up d’aide du shop (flèches + bouton V) -->
+  <div class="shop-popup" id="shopHelpPopup">
+    <div class="shop-box">
+Pour descendre votre sélection :
+         ______
+        || ↓  ||
+        ||____||
+        |/____\|
 
-    <script>
-        sessionStorage.setItem('previousPage', window.location.pathname);
-    </script>
-    
+Pour monter votre sélection :
+         ______
+        || ↑  ||
+        ||____||
+        |/____\|
+
+Appuyez sur
+         ______
+        || V  ||
+        ||____||
+        |/____\|
+pour valider
+    </div>
+  </div>
+
+  <!-- Menu de triche -->
+  <div class="cheat-menu" id="cheatMenu">
+    <div class="cheat-box">
+      <h3>Menu de triche</h3>
+      <div>
+        <label for="newClicks">Nouveaux clics :</label>
+        <input type="number" id="newClicks" value="0" />
+      </div>
+      <div>
+        <label for="newBits">Nouveaux bits :</label>
+        <input type="number" id="newBits" value="0" />
+      </div>
+      <div>
+        <button id="setScoreBtn">Mettre à jour</button>
+        <button id="resetGameBtn">Tout remettre à 0</button>
+      </div>
+      <div>
+        <button id="closeCheatBtn">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /********************************
+     *        VARIABLES GLOBALES
+     ********************************/
+    // On renomme "money" en "bits" pour l'affichage
+    let clicks = localStorage.getItem('clicks') ? parseInt(localStorage.getItem('clicks')) : 0;
+    let bits   = localStorage.getItem('bits')  ? parseFloat(localStorage.getItem('bits'))  : 0;
+
+    // Popups et éléments HTML
+    const counterEl    = document.getElementById('counter');
+    const clickerEl    = document.getElementById('clicker');
+    const popupEl      = document.getElementById('popup');        
+    const shopHelpEl   = document.getElementById('shopHelpPopup');
+    const cheatMenuEl  = document.getElementById('cheatMenu');
+    const shopEl       = document.getElementById('shopContainer');
+    const shopItemsEl  = document.getElementById('shopItems');
+
+    let popupShown     = false; // pop-up secret
+    let shopUnlocked   = false; // débloqué à 200 clics
+    let shopHelpShown  = false; // pop-up d’aide du shop
+
+    let cheatSequence  = [];
+    const cheatTimeout = 3000; // 3 secondes
+
+    // Upgrades
+    let shopItems = [
+      { name: 'Petit Auto-Clicker',  baseCost: 50,   quantity: 0, effectType: 'autoClick',  effectValue: 1 },
+      { name: 'Moyen Auto-Clicker',  baseCost: 300,  quantity: 0, effectType: 'autoClick',  effectValue: 5 },
+      { name: 'Gros Auto-Clicker',   baseCost: 1500, quantity: 0, effectType: 'autoClick',  effectValue: 20 },
+      { name: 'Double Gains',        baseCost: 500,  quantity: 0, effectType: 'multiplier', effectValue: 2 },
+      { name: 'Quadruple Gains',     baseCost: 3000, quantity: 0, effectType: 'multiplier', effectValue: 4 }
+    ];
+    let selectedShopIndex = 0;
+
+    let totalMultiplier = 1;
+    let autoClickRate   = 0;
+
+    /********************************
+     *   FONCTIONS DE FORMATAGE
+     ********************************/
+    // Formatage des bits : bits, Kbits, Mbits, Gbits, Tbits, etc.
+    function formatBits(value) {
+      if(value < 1000) {
+        // Pour les petites valeurs, on garde 2 décimales si nécessaire
+        return value.toFixed(2) + ' bits';
+      }
+      const units = ['bits', 'Kbits', 'Mbits', 'Gbits', 'Tbits', 'Pbits', 'Ebits', 'Zbits', 'Ybits'];
+      let i = 0;
+      let val = value;
+      while(val >= 1000 && i < units.length - 1) {
+        val /= 1000;
+        i++;
+      }
+      return val.toFixed(2) + ' ' + units[i];
+    }
+
+    // Formatage des clics : 1K, 1.2M, 1.3B, etc.
+    function formatClicks(value) {
+      if(value < 1000) {
+        return value.toString();
+      }
+      const units = ['', 'K', 'M', 'B', 'T', 'P', 'E', 'Z', 'Y'];
+      let i = 0;
+      let val = value;
+      while(val >= 1000 && i < units.length - 1) {
+        val /= 1000;
+        i++;
+      }
+      return val.toFixed(2) + units[i];
+    }
+
+    /********************************
+     *   SAUVEGARDE / CHARGEMENT
+     ********************************/
+    function saveToLocalStorage() {
+      localStorage.setItem('clicks', clicks.toString());
+      localStorage.setItem('bits',   bits.toString());
+    }
+
+    /********************************
+     *   MISE À JOUR DU COMPTEUR
+     ********************************/
+    function updateCounterDisplay() {
+      // On formatte différemment en fonction du seuil des 200 clics
+      if(clicks < 200) {
+        // Avant 200 clics, on affiche juste le nb de clics (formaté)
+        counterEl.textContent = formatClicks(clicks);
+      } else {
+        // Au-delà de 200 clics, on affiche 2 lignes : bits et clics
+        counterEl.textContent = 
+          "bits : " + formatBits(bits) + "\n" +
+          "clics : " + formatClicks(clicks);
+      }
+    }
+    updateCounterDisplay(); // initial
+
+    /********************************
+     *     GESTION POPUPS
+     ********************************/
+    // Pop-up secret (100 <= clics < 150)
+    function showPopup() {
+      popupEl.style.display = 'block';
+      popupShown = true;
+    }
+    function hidePopup() {
+      popupEl.style.display = 'none';
+      popupShown = false;
+    }
+
+    // Pop-up d’aide du shop
+    function showShopHelp() {
+      shopHelpEl.style.display = 'block';
+      shopHelpShown = true;
+    }
+    function hideShopHelp() {
+      shopHelpEl.style.display = 'none';
+      shopHelpShown = false;
+    }
+
+    /********************************
+     *     GESTION DU SHOP
+     ********************************/
+    function showShop() {
+      shopEl.style.display = 'block';
+      renderShopItems();
+    }
+
+    // Calcul du coût exponentiel
+    function getItemCost(item) {
+      return Math.floor(item.baseCost * Math.pow(1.15, item.quantity));
+    }
+
+    // Mise à jour de l’affichage du shop
+    function renderShopItems() {
+      let html = '';
+      shopItems.forEach((item, idx) => {
+        const cost = getItemCost(item);
+        const cursor = (idx === selectedShopIndex) ? '<span class="shop-cursor">></span>' : '&nbsp;&nbsp;';
+        html += `
+          <div class="shop-item">
+            ${cursor} ${item.name} (lvl ${item.quantity}) - Coût: ${formatBits(cost)}
+          </div>
+        `;
+      });
+      shopItemsEl.innerHTML = html;
+    }
+
+    // Achat d’un item
+    function buyItem(index) {
+      const item = shopItems[index];
+      const cost = getItemCost(item);
+      if(bits >= cost) {
+        bits -= cost;
+        item.quantity++;
+        applyEffect(item);
+        updateCounterDisplay();
+        saveToLocalStorage();
+        renderShopItems();
+      }
+    }
+
+    // Applique l’effet de l’item acheté
+    function applyEffect(item) {
+      if(item.effectType === 'autoClick') {
+        // L’auto-clicker va déclencher de "faux" clics
+        autoClickRate += item.effectValue;
+      } else if(item.effectType === 'multiplier') {
+        totalMultiplier *= item.effectValue;
+      }
+    }
+
+    /********************************
+     *   AUTO-CLICK (CHAQUE SECONDE)
+     ********************************/
+    // On simule un clic "manuel" pour chaque point d’autoClickRate
+    setInterval(() => {
+      if(autoClickRate > 0) {
+        for(let i = 0; i < autoClickRate; i++){
+          handleManualClick(false); // false => pas d'animation
+        }
+      }
+    }, 1000);
+
+    /********************************
+     * GESTION DU CLIC MANUEL (ESPACE)
+     ********************************/
+    // showFeedback = true => on fait l’animation du bouton
+    // showFeedback = false => auto-click (pas d’animation)
+    function handleManualClick(showFeedback = true) {
+      // +1 clic
+      clicks++;
+      // Gains en bits affectés par totalMultiplier
+      bits += totalMultiplier;
+
+      updateCounterDisplay();
+      saveToLocalStorage();
+
+      // Animation de clic seulement si showFeedback
+      if(showFeedback) {
+        clickerEl.classList.add('active');
+        setTimeout(() => {
+          clickerEl.classList.remove('active');
+        }, 150);
+      }
+
+      // Pop-up secret entre 100 et 150 clics
+      if(clicks >= 100 && clicks < 150 && !popupShown) {
+        showPopup();
+      }
+      if(clicks >= 150 && popupShown) {
+        hidePopup();
+      }
+
+      // Déblocage du shop dès 200 clics
+      if(clicks >= 200 && !shopUnlocked) {
+        shopUnlocked = true;
+        showShop();
+        showShopHelp();  // pop-up d’aide n’apparaît qu’une fois
+      }
+    }
+
+    /********************************
+     * GESTION DE LA SÉQUENCE TRICHE
+     ********************************/
+    function handleCheatKey(event) {
+      if (event.shiftKey && event.key.toUpperCase() === 'Q') {
+        const now = Date.now();
+        cheatSequence.push(now);
+        cheatSequence = cheatSequence.filter(t => now - t < cheatTimeout);
+        if (cheatSequence.length >= 5) {
+          cheatSequence = [];
+          showCheatMenu();
+        }
+      }
+    }
+
+    function showCheatMenu() {
+      cheatMenuEl.style.display = 'flex';
+    }
+    function hideCheatMenu() {
+      cheatMenuEl.style.display = 'none';
+    }
+
+    /********************************
+     *   ÉCOUTEURS D'ÉVÉNEMENTS
+     ********************************/
+    // Clavier global
+    document.addEventListener('keydown', function(event) {
+      // Espace -> clic manuel
+      if (event.code === 'Space') {
+        event.preventDefault();
+        handleManualClick(true);
+      }
+
+      // Enter -> ferme pop-up secret
+      if (event.code === 'Enter' && popupShown) {
+        hidePopup();
+      }
+
+      // Détecter la séquence triche
+      handleCheatKey(event);
+
+      // Shop navigation (si le shop est débloqué)
+      if(shopUnlocked) {
+        if(event.code === 'ArrowUp') {
+          selectedShopIndex--;
+          if(selectedShopIndex < 0) selectedShopIndex = shopItems.length - 1;
+          renderShopItems();
+        }
+        else if(event.code === 'ArrowDown') {
+          selectedShopIndex++;
+          if(selectedShopIndex >= shopItems.length) selectedShopIndex = 0;
+          renderShopItems();
+        }
+        else if(event.key.toUpperCase() === 'V') {
+          // Ferme le popup d'aide la première fois
+          if(shopHelpShown) {
+            hideShopHelp();
+          } else {
+            // Achète l'item sélectionné
+            buyItem(selectedShopIndex);
+          }
+        }
+      }
+    });
+
+    // Menu de triche : boutons
+    document.getElementById('setScoreBtn').addEventListener('click', function() {
+      const newClicks = parseInt(document.getElementById('newClicks').value);
+      const newBits   = parseFloat(document.getElementById('newBits').value);
+
+      if (!isNaN(newClicks)) clicks = newClicks;
+      if (!isNaN(newBits))   bits   = newBits;
+
+      updateCounterDisplay();
+      saveToLocalStorage();
+    });
+
+    document.getElementById('resetGameBtn').addEventListener('click', function() {
+      clicks = 0;
+      bits   = 0;
+      totalMultiplier = 1;
+      autoClickRate   = 0;
+      shopItems.forEach(i => i.quantity = 0);
+      selectedShopIndex = 0;
+      popupShown        = false;
+      shopUnlocked      = false;
+      shopHelpShown     = false;
+
+      hidePopup();
+      hideShopHelp();
+      shopEl.style.display = 'none';
+
+      updateCounterDisplay();
+      saveToLocalStorage();
+      renderShopItems();
+    });
+
+    document.getElementById('closeCheatBtn').addEventListener('click', function() {
+      hideCheatMenu();
+    });
+  </script>
 </body>
 </html>
-
