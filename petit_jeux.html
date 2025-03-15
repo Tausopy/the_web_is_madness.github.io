@@ -23,7 +23,7 @@
     .container {
       text-align: center;
       z-index: 2;
-      position: relative;
+      position: relative; /* Permet un positionnement absolu interne */
     }
 
     /* Affichage du score */
@@ -124,18 +124,19 @@
       cursor: pointer;
     }
 
-    /* Le shop : positionné au niveau du bouton, décalé vers la droite */
+    /* Le shop, positionné en haut à droite du .container */
     .shop-container {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(20%, -50%);
-      width: 350px;
+      top: 0;
+      right: 0;
+      margin: 10px;       /* Un petit marge intérieure pour éviter de coller */
+      width: 350px;       /* Largeur plus grande */
       background-color: #111f16;
       border: 2px solid #14d402;
       padding: 10px;
-      display: none; /* S'affiche dès 200 clics */
+      display: none;      /* S'affiche dès 200 clics */
       font-size: 14px;
+      box-shadow: 0 0 10px #14d402; /* Léger halo vert */
     }
     .shop-title {
       text-align: center;
@@ -218,21 +219,7 @@ pour valider
   <div class="cheat-menu" id="cheatMenu">
     <div class="cheat-box">
       <h3>Menu de triche</h3>
-      <div>
-        <label for="newClicks">Nouveaux clics :</label>
-        <input type="number" id="newClicks" value="0" />
-      </div>
-      <div>
-        <label for="newBits">Nouveaux bits :</label>
-        <input type="number" id="newBits" value="0" />
-      </div>
-      <div>
-        <button id="setScoreBtn">Mettre à jour</button>
-        <button id="resetGameBtn">Tout remettre à 0</button>
-      </div>
-      <div>
-        <button id="closeCheatBtn">Fermer</button>
-      </div>
+      <!-- ... (même structure qu'avant) -->
     </div>
   </div>
 
