@@ -260,6 +260,8 @@ pour valider
      ********************************/
     let clicks = localStorage.getItem('clicks') ? parseInt(localStorage.getItem('clicks')) : 0;
     let bits   = localStorage.getItem('bits')  ? parseFloat(localStorage.getItem('bits'))  : 0;
+    let shownNarratorIds = JSON.parse(localStorage.getItem('shownNarratorIds')) || [];
+
 
     const counterEl    = document.getElementById('counter');
     const clickerEl    = document.getElementById('clicker');
@@ -296,55 +298,70 @@ pour valider
     /********************************
      *  NARRATION (Stanley Parable style)
      ********************************/
-    let narrationTriggers = [
-      {
-        type: 'clicks',
-        value: 500,
-        message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
-                 "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
-                 "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
-      },
-      {
-        type: 'clicks',
-        value: 1000,
-        message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
-                 "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
-                 "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
-      },
-      {
-        type: 'bits',
-        value: 100000,
-        message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
-                 "Mais, vous savez, tout cela ne signifie rien\n" +
-                 "dans l'immensité de l'univers. Bonne journée ! »"
-      },
-      {
-        type: 'clicks',
-        value: 5000,
-        message: "« 5000 clics...\n" +
-                 "À ce stade, je me demande si vous ne vous\n" +
-                 "êtes pas égaré dans votre quête de clics infinis.\n" +
-                 "Mais qui suis-je pour juger ? Continuez donc. »"
-      }
-    ];
+     let narrationTriggers = [
+  {
+    id: "narration500",
+    type: 'clicks',
+    value: 500,
+    message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+             "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+             "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+  },
+  {
+    id: "narration1000",
+    type: 'clicks',
+    value: 1000,
+    message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+             "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+             "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+  },
+  {
+    id: "narration100kBits",
+    type: 'bits',
+    value: 100000,
+    message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+             "Mais, vous savez, tout cela ne signifie rien\n" +
+             "dans l'immensité de l'univers. Bonne journée ! »"
+  },
+  {
+    id: "narration5000",
+    type: 'clicks',
+    value: 5000,
+    message: "« 5000 clics...\n" +
+             "À ce stade, je me demande si vous ne vous\n" +
+             "êtes pas égaré dans votre quête de clics infinis.\n" +
+             "Mais qui suis-je pour juger ? Continuez donc. »"
+  }
+];
 
-    function checkNarrationTriggers() {
-      let triggeredIndex = -1;
-      for (let i = 0; i < narrationTriggers.length; i++) {
-        const trig = narrationTriggers[i];
-        if (trig.type === 'clicks' && clicks >= trig.value) {
-          triggeredIndex = i;
-          break;
-        } else if (trig.type === 'bits' && bits >= trig.value) {
-          triggeredIndex = i;
-          break;
-        }
-      }
-      if (triggeredIndex !== -1) {
-        showNarratorPopup(narrationTriggers[triggeredIndex].message);
-        narrationTriggers.splice(triggeredIndex, 1);
-      }
+
+function checkNarrationTriggers() {
+  let triggeredIndex = -1;
+  for (let i = 0; i < narrationTriggers.length; i++) {
+    const trig = narrationTriggers[i];
+    // Vérifier si ce trigger a déjà été affiché
+    if (shownNarratorIds.includes(trig.id)) {
+      continue; // passer au suivant
     }
+    if (trig.type === 'clicks' && clicks >= trig.value) {
+      triggeredIndex = i;
+      break;
+    } else if (trig.type === 'bits' && bits >= trig.value) {
+      triggeredIndex = i;
+      break;
+    }
+  }
+  if (triggeredIndex !== -1) {
+    const trigger = narrationTriggers[triggeredIndex];
+    showNarratorPopup(trigger.message);
+    // Ajouter l'ID du trigger affiché et sauvegarder dans localStorage
+    shownNarratorIds.push(trigger.id);
+    localStorage.setItem('shownNarratorIds', JSON.stringify(shownNarratorIds));
+    // Optionnel : retirer le trigger de la liste si vous ne voulez plus le tester
+    // narrationTriggers.splice(triggeredIndex, 1);
+  }
+}
+
 
     function showNarratorPopup(message) {
       narratorMessageEl.textContent = message;
@@ -583,36 +600,41 @@ pour valider
 
       // On réinitialise la narration
       narrationTriggers = [
-        {
-          type: 'clicks',
-          value: 500,
-          message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
-                   "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
-                   "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
-        },
-        {
-          type: 'clicks',
-          value: 1000,
-          message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
-                   "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
-                   "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
-        },
-        {
-          type: 'bits',
-          value: 100000,
-          message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
-                   "Mais, vous savez, tout cela ne signifie rien\n" +
-                   "dans l'immensité de l'univers. Bonne journée ! »"
-        },
-        {
-          type: 'clicks',
-          value: 5000,
-          message: "« 5000 clics...\n" +
-                   "À ce stade, je me demande si vous ne vous\n" +
-                   "êtes pas égaré dans votre quête de clics infinis.\n" +
-                   "Mais qui suis-je pour juger ? Continuez donc. »"
-        }
-      ];
+      {
+    id: "narration500",
+    type: 'clicks',
+    value: 500,
+    message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+             "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+             "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+  },
+  {
+    id: "narration1000",
+    type: 'clicks',
+    value: 1000,
+    message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+             "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+             "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+  },
+  {
+    id: "narration100kBits",
+    type: 'bits',
+    value: 100000,
+    message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+             "Mais, vous savez, tout cela ne signifie rien\n" +
+             "dans l'immensité de l'univers. Bonne journée ! »"
+  },
+  {
+    id: "narration5000",
+    type: 'clicks',
+    value: 5000,
+    message: "« 5000 clics...\n" +
+             "À ce stade, je me demande si vous ne vous\n" +
+             "êtes pas égaré dans votre quête de clics infinis.\n" +
+             "Mais qui suis-je pour juger ? Continuez donc. »"
+  }
+];
+
 
       hidePopup();
       hideShopHelp();
