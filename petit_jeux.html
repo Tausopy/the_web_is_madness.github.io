@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Petit Jeu Clicker - Bits & Clics</title>
+  <title>Petit Jeu Clicker - Bits & Clics + Narrateur</title>
   <style>
     body {
       background-color: #111f16;
@@ -19,21 +19,16 @@
       cursor: none;
     }
 
-    /* Conteneur principal (score + bouton) */
     .container {
       text-align: center;
       z-index: 2;
-      position: relative; /* Permet un positionnement absolu interne */
+      position: relative;
     }
-
-    /* Affichage du score */
     .counter {
       font-size: 2rem;
       margin-bottom: 20px;
       white-space: pre-line;
     }
-
-    /* Bouton de clic (barre espace) */
     .clicker {
       border: 2px solid #14d402;
       padding: 10px 20px;
@@ -41,6 +36,32 @@
     .clicker.active {
       background-color: #14d402;
       color: #111f16;
+    }
+
+    .shop-container {
+        position: fixed;         /* Fixé par rapport à la fenêtre */
+        top: 50%;                /* Au milieu de l'écran en hauteur */
+        right: 10px;             /* À 10px du bord droit de la fenêtre */
+        transform: translateY(-50%); /* Centre verticalement */
+        width: 350px;            
+        background-color: #111f16;
+        border: 2px solid #14d402;
+        padding: 10px;
+        display: none;      /* Affiché dès 200 clics */
+        font-size: 14px;
+        box-shadow: 0 0 10px #14d402; /* Un petit halo vert */
+    }
+    .shop-title {
+      text-align: center;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .shop-item {
+      margin: 4px 0;
+    }
+    .shop-cursor {
+      color: #14d402;
+      margin-right: 5px;
     }
 
     /* Pop-up secret (score entre 100 et 150 clics) */
@@ -51,7 +72,7 @@
       transform: translate(-50%, 0);
       display: none;
       cursor: none;
-      z-index: 1;
+      z-index: 5;
     }
     .ascii-box {
       border: 2px solid #14d402;
@@ -61,6 +82,7 @@
       background-color: #111f16;
       color: #14d402;
       text-align: left;
+      max-width: 400px;
     }
 
     /* Pop-up d’aide du shop (flèches + bouton V) */
@@ -71,7 +93,7 @@
       transform: translate(-50%, 0);
       display: none;
       cursor: none;
-      z-index: 1;
+      z-index: 5;
     }
     .shop-box {
       border: 2px solid #14d402;
@@ -81,6 +103,23 @@
       background-color: #111f16;
       color: #14d402;
       text-align: left;
+      max-width: 400px;
+    }
+
+    /* Pop-up narrateur (Stanley Parable style) */
+    .narrator-popup {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 10;
+      border: 2px solid #14d402;
+      background-color: #111f16;
+      padding: 20px;
+      max-width: 450px;
+      color: #14d402;
+      font-family: monospace;
     }
 
     /* Menu de triche */
@@ -95,7 +134,7 @@
       align-items: center;
       justify-content: center;
       cursor: default;
-      z-index: 3;
+      z-index: 9;
     }
     .cheat-box {
       border: 2px solid #14d402;
@@ -124,34 +163,6 @@
       cursor: pointer;
     }
 
-    /* Le shop, positionné en haut à droite du .container */
-    .shop-container {
-      position: absolute;
-      top: 0;
-      right: 0;
-      margin: 10px;       /* Un petit marge intérieure pour éviter de coller */
-      width: 350px;       /* Largeur plus grande */
-      background-color: #111f16;
-      border: 2px solid #14d402;
-      padding: 10px;
-      display: none;      /* S'affiche dès 200 clics */
-      font-size: 14px;
-      box-shadow: 0 0 10px #14d402; /* Léger halo vert */
-    }
-    .shop-title {
-      text-align: center;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    .shop-item {
-      margin: 4px 0;
-    }
-    .shop-cursor {
-      color: #14d402;
-      margin-right: 5px;
-    }
-
-    /* Responsive */
     @media (max-width: 600px) {
       .counter {
         font-size: 1.5rem;
@@ -215,11 +226,31 @@ pour valider
     </div>
   </div>
 
+  <!-- Pop-up narrateur (Stanley Parable style) -->
+  <!-- Plus de bouton "OK" - on ferme avec Entrée -->
+  <div class="narrator-popup" id="narratorPopup">
+    <p id="narratorMessage"></p>
+  </div>
+
   <!-- Menu de triche -->
   <div class="cheat-menu" id="cheatMenu">
     <div class="cheat-box">
       <h3>Menu de triche</h3>
-      <!-- ... (même structure qu'avant) -->
+      <div>
+        <label for="newClicks">Nouveaux clics :</label>
+        <input type="number" id="newClicks" value="0" />
+      </div>
+      <div>
+        <label for="newBits">Nouveaux bits :</label>
+        <input type="number" id="newBits" value="0" />
+      </div>
+      <div>
+        <button id="setScoreBtn">Mettre à jour</button>
+        <button id="resetGameBtn">Tout remettre à 0</button>
+      </div>
+      <div>
+        <button id="closeCheatBtn">Fermer</button>
+      </div>
     </div>
   </div>
 
@@ -227,11 +258,9 @@ pour valider
     /********************************
      *        VARIABLES GLOBALES
      ********************************/
-    // On renomme "money" en "bits" pour l'affichage
     let clicks = localStorage.getItem('clicks') ? parseInt(localStorage.getItem('clicks')) : 0;
     let bits   = localStorage.getItem('bits')  ? parseFloat(localStorage.getItem('bits'))  : 0;
 
-    // Popups et éléments HTML
     const counterEl    = document.getElementById('counter');
     const clickerEl    = document.getElementById('clicker');
     const popupEl      = document.getElementById('popup');        
@@ -240,9 +269,13 @@ pour valider
     const shopEl       = document.getElementById('shopContainer');
     const shopItemsEl  = document.getElementById('shopItems');
 
-    let popupShown     = false; // pop-up secret
-    let shopUnlocked   = false; // débloqué à 200 clics
-    let shopHelpShown  = false; // pop-up d’aide du shop
+    // Pop-up narrateur (sans bouton OK)
+    const narratorPopupEl  = document.getElementById('narratorPopup');
+    const narratorMessageEl= document.getElementById('narratorMessage');
+
+    let popupShown     = false;  // pop-up secret
+    let shopUnlocked   = false;  // débloqué à 200 clics
+    let shopHelpShown  = false;  // pop-up d’aide du shop
 
     let cheatSequence  = [];
     const cheatTimeout = 3000; // 3 secondes
@@ -261,37 +294,65 @@ pour valider
     let autoClickRate   = 0;
 
     /********************************
-     *   FONCTIONS DE FORMATAGE
+     *  NARRATION (Stanley Parable style)
      ********************************/
-    // Formatage des bits : bits, Kbits, Mbits, Gbits, Tbits, etc.
-    function formatBits(value) {
-      if(value < 1000) {
-        // Pour les petites valeurs, on garde 2 décimales si nécessaire
-        return value.toFixed(2) + ' bits';
+    let narrationTriggers = [
+      {
+        type: 'clicks',
+        value: 500,
+        message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+                 "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+                 "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+      },
+      {
+        type: 'clicks',
+        value: 1000,
+        message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+                 "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+                 "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+      },
+      {
+        type: 'bits',
+        value: 100000,
+        message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+                 "Mais, vous savez, tout cela ne signifie rien\n" +
+                 "dans l'immensité de l'univers. Bonne journée ! »"
+      },
+      {
+        type: 'clicks',
+        value: 5000,
+        message: "« 5000 clics...\n" +
+                 "À ce stade, je me demande si vous ne vous\n" +
+                 "êtes pas égaré dans votre quête de clics infinis.\n" +
+                 "Mais qui suis-je pour juger ? Continuez donc. »"
       }
-      const units = ['bits', 'Kbits', 'Mbits', 'Gbits', 'Tbits', 'Pbits', 'Ebits', 'Zbits', 'Ybits'];
-      let i = 0;
-      let val = value;
-      while(val >= 1000 && i < units.length - 1) {
-        val /= 1000;
-        i++;
+    ];
+
+    function checkNarrationTriggers() {
+      let triggeredIndex = -1;
+      for (let i = 0; i < narrationTriggers.length; i++) {
+        const trig = narrationTriggers[i];
+        if (trig.type === 'clicks' && clicks >= trig.value) {
+          triggeredIndex = i;
+          break;
+        } else if (trig.type === 'bits' && bits >= trig.value) {
+          triggeredIndex = i;
+          break;
+        }
       }
-      return val.toFixed(2) + ' ' + units[i];
+      if (triggeredIndex !== -1) {
+        showNarratorPopup(narrationTriggers[triggeredIndex].message);
+        narrationTriggers.splice(triggeredIndex, 1);
+      }
     }
 
-    // Formatage des clics : 1K, 1.2M, 1.3B, etc.
-    function formatClicks(value) {
-      if(value < 1000) {
-        return value.toString();
-      }
-      const units = ['', 'K', 'M', 'B', 'T', 'P', 'E', 'Z', 'Y'];
-      let i = 0;
-      let val = value;
-      while(val >= 1000 && i < units.length - 1) {
-        val /= 1000;
-        i++;
-      }
-      return val.toFixed(2) + units[i];
+    function showNarratorPopup(message) {
+      narratorMessageEl.textContent = message;
+      narratorPopupEl.style.display = 'block';
+    }
+
+    function hideNarratorPopup() {
+      narratorPopupEl.style.display = 'none';
     }
 
     /********************************
@@ -306,15 +367,10 @@ pour valider
      *   MISE À JOUR DU COMPTEUR
      ********************************/
     function updateCounterDisplay() {
-      // On formatte différemment en fonction du seuil des 200 clics
       if(clicks < 200) {
-        // Avant 200 clics, on affiche juste le nb de clics (formaté)
-        counterEl.textContent = formatClicks(clicks);
+        counterEl.textContent = clicks;
       } else {
-        // Au-delà de 200 clics, on affiche 2 lignes : bits et clics
-        counterEl.textContent = 
-          "bits : " + formatBits(bits) + "\n" +
-          "clics : " + formatClicks(clicks);
+        counterEl.textContent = "bits : " + bits.toFixed(2) + "\nclics : " + clicks;
       }
     }
     updateCounterDisplay(); // initial
@@ -350,12 +406,10 @@ pour valider
       renderShopItems();
     }
 
-    // Calcul du coût exponentiel
     function getItemCost(item) {
       return Math.floor(item.baseCost * Math.pow(1.15, item.quantity));
     }
 
-    // Mise à jour de l’affichage du shop
     function renderShopItems() {
       let html = '';
       shopItems.forEach((item, idx) => {
@@ -363,14 +417,13 @@ pour valider
         const cursor = (idx === selectedShopIndex) ? '<span class="shop-cursor">></span>' : '&nbsp;&nbsp;';
         html += `
           <div class="shop-item">
-            ${cursor} ${item.name} (lvl ${item.quantity}) - Coût: ${formatBits(cost)}
+            ${cursor} ${item.name} (lvl ${item.quantity}) - Coût: ${cost} bits
           </div>
         `;
       });
       shopItemsEl.innerHTML = html;
     }
 
-    // Achat d’un item
     function buyItem(index) {
       const item = shopItems[index];
       const cost = getItemCost(item);
@@ -384,10 +437,8 @@ pour valider
       }
     }
 
-    // Applique l’effet de l’item acheté
     function applyEffect(item) {
       if(item.effectType === 'autoClick') {
-        // L’auto-clicker va déclencher de "faux" clics
         autoClickRate += item.effectValue;
       } else if(item.effectType === 'multiplier') {
         totalMultiplier *= item.effectValue;
@@ -397,11 +448,10 @@ pour valider
     /********************************
      *   AUTO-CLICK (CHAQUE SECONDE)
      ********************************/
-    // On simule un clic "manuel" pour chaque point d’autoClickRate
     setInterval(() => {
       if(autoClickRate > 0) {
         for(let i = 0; i < autoClickRate; i++){
-          handleManualClick(false); // false => pas d'animation
+          handleManualClick(false);
         }
       }
     }, 1000);
@@ -409,18 +459,13 @@ pour valider
     /********************************
      * GESTION DU CLIC MANUEL (ESPACE)
      ********************************/
-    // showFeedback = true => on fait l’animation du bouton
-    // showFeedback = false => auto-click (pas d’animation)
     function handleManualClick(showFeedback = true) {
-      // +1 clic
       clicks++;
-      // Gains en bits affectés par totalMultiplier
       bits += totalMultiplier;
 
       updateCounterDisplay();
       saveToLocalStorage();
 
-      // Animation de clic seulement si showFeedback
       if(showFeedback) {
         clickerEl.classList.add('active');
         setTimeout(() => {
@@ -428,7 +473,6 @@ pour valider
         }, 150);
       }
 
-      // Pop-up secret entre 100 et 150 clics
       if(clicks >= 100 && clicks < 150 && !popupShown) {
         showPopup();
       }
@@ -436,12 +480,13 @@ pour valider
         hidePopup();
       }
 
-      // Déblocage du shop dès 200 clics
       if(clicks >= 200 && !shopUnlocked) {
         shopUnlocked = true;
         showShop();
-        showShopHelp();  // pop-up d’aide n’apparaît qu’une fois
+        showShopHelp();
       }
+
+      checkNarrationTriggers();
     }
 
     /********************************
@@ -469,7 +514,6 @@ pour valider
     /********************************
      *   ÉCOUTEURS D'ÉVÉNEMENTS
      ********************************/
-    // Clavier global
     document.addEventListener('keydown', function(event) {
       // Espace -> clic manuel
       if (event.code === 'Space') {
@@ -477,15 +521,22 @@ pour valider
         handleManualClick(true);
       }
 
-      // Enter -> ferme pop-up secret
-      if (event.code === 'Enter' && popupShown) {
-        hidePopup();
+      // Enter -> ferme pop-up secret OU narrateur
+      if (event.code === 'Enter') {
+        // Ferme la pop-up secret
+        if(popupShown) {
+          hidePopup();
+        }
+        // Ferme la pop-up narrateur si affichée
+        if(narratorPopupEl.style.display === 'block') {
+          hideNarratorPopup();
+        }
       }
 
       // Détecter la séquence triche
       handleCheatKey(event);
 
-      // Shop navigation (si le shop est débloqué)
+      // Shop navigation
       if(shopUnlocked) {
         if(event.code === 'ArrowUp') {
           selectedShopIndex--;
@@ -498,11 +549,9 @@ pour valider
           renderShopItems();
         }
         else if(event.key.toUpperCase() === 'V') {
-          // Ferme le popup d'aide la première fois
           if(shopHelpShown) {
             hideShopHelp();
           } else {
-            // Achète l'item sélectionné
             buyItem(selectedShopIndex);
           }
         }
@@ -532,8 +581,42 @@ pour valider
       shopUnlocked      = false;
       shopHelpShown     = false;
 
+      // On réinitialise la narration
+      narrationTriggers = [
+        {
+          type: 'clicks',
+          value: 500,
+          message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+                   "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+                   "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+        },
+        {
+          type: 'clicks',
+          value: 1000,
+          message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+                   "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+                   "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+        },
+        {
+          type: 'bits',
+          value: 100000,
+          message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+                   "Mais, vous savez, tout cela ne signifie rien\n" +
+                   "dans l'immensité de l'univers. Bonne journée ! »"
+        },
+        {
+          type: 'clicks',
+          value: 5000,
+          message: "« 5000 clics...\n" +
+                   "À ce stade, je me demande si vous ne vous\n" +
+                   "êtes pas égaré dans votre quête de clics infinis.\n" +
+                   "Mais qui suis-je pour juger ? Continuez donc. »"
+        }
+      ];
+
       hidePopup();
       hideShopHelp();
+      hideNarratorPopup();
       shopEl.style.display = 'none';
 
       updateCounterDisplay();
