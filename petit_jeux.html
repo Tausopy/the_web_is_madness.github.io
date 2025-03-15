@@ -270,6 +270,15 @@ pour valider
     const cheatMenuEl  = document.getElementById('cheatMenu');
     const shopEl       = document.getElementById('shopContainer');
     const shopItemsEl  = document.getElementById('shopItems');
+    // Bonus par clic (Clic en Or)
+    let clickBonus = 0;
+
+    // Gestion du combo pour Boost de Combo
+    let comboCount = 0;
+    let lastClickTime = 0;
+    const comboThreshold = 1500; // temps en ms pour rester dans le combo
+    let comboUpgradeBonus = 0;   // bonus cumulable via les upgrades de combo
+
 
     // Pop-up narrateur (sans bouton OK)
     const narratorPopupEl  = document.getElementById('narratorPopup');
@@ -283,113 +292,158 @@ pour valider
     const cheatTimeout = 3000; // 3 secondes
 
     // Upgrades
-    let shopItems = [
-      { name: 'Petit Auto-Clicker',  baseCost: 50,   quantity: 0, effectType: 'autoClick',  effectValue: 1 },
-      { name: 'Moyen Auto-Clicker',  baseCost: 300,  quantity: 0, effectType: 'autoClick',  effectValue: 5 },
-      { name: 'Gros Auto-Clicker',   baseCost: 1500, quantity: 0, effectType: 'autoClick',  effectValue: 20 },
-      { name: 'Double Gains',        baseCost: 500,  quantity: 0, effectType: 'multiplier', effectValue: 2 },
-      { name: 'Quadruple Gains',     baseCost: 3000, quantity: 0, effectType: 'multiplier', effectValue: 4 }
+    const defaultShopItems = [
+        { name: 'Petit Auto-Clicker',  baseCost: 50,    quantity: 0, effectType: 'autoClick',  effectValue: 1 },
+        { name: 'Moyen Auto-Clicker',    baseCost: 300,   quantity: 0, effectType: 'autoClick',  effectValue: 5 },
+        { name: 'Gros Auto-Clicker',     baseCost: 1500,  quantity: 0, effectType: 'autoClick',  effectValue: 20 },
+        { name: 'Double Gains',          baseCost: 500,   quantity: 0, effectType: 'multiplier', effectValue: 2 },
+        { name: 'Quadruple Gains',       baseCost: 3000,  quantity: 0, effectType: 'multiplier', effectValue: 4 },
+        { name: 'Hyper Auto-Clicker',    baseCost: 10000, quantity: 0, effectType: 'autoClick',  effectValue: 50 },
+        { name: 'Ultra Gains',           baseCost: 5000,  quantity: 0, effectType: 'multiplier', effectValue: 12 },
+        { name: 'Clic en Or',            baseCost: 20000, quantity: 0, effectType: 'clickBonus', effectValue: 100 },
+        { name: 'Boost de Combo',        baseCost: 3000,  quantity: 0, effectType: 'comboMultiplier', effectValue: 2 },
+        { name: 'Méga Bot',              baseCost: 30000, quantity: 0, effectType: 'autoClick', effectValue: 1000 }
     ];
+
+    // Charge la sauvegarde et fusionne avec la liste par défaut
+    let savedShopItems = localStorage.getItem('shopItems') ? JSON.parse(localStorage.getItem('shopItems')) : [];
+    // Pour chaque item par défaut, on cherche s'il est dans la sauvegarde par son nom
+    shopItems = defaultShopItems.map(defaultItem => {
+        const savedItem = savedShopItems.find(i => i.name === defaultItem.name);
+        // Si trouvé, on fusionne les propriétés, sinon on garde l'item par défaut
+        return savedItem ? { ...defaultItem, quantity: savedItem.quantity } : defaultItem;
+    });
+
     let selectedShopIndex = 0;
 
     let totalMultiplier = 1;
     let autoClickRate   = 0;
 
+    // Après la déclaration initiale de shopItems
+    if(localStorage.getItem('shopItems')) {
+        shopItems = JSON.parse(localStorage.getItem('shopItems'));
+    }
+
+    function formatBits(value) {
+        const units = [
+            { value: 1e30, symbol: "quetta" },
+            { value: 1e27, symbol: "ronna" },
+            { value: 1e24, symbol: "yotta" },
+            { value: 1e21, symbol: "zetta" },
+            { value: 1e18, symbol: "exa" },
+            { value: 1e15, symbol: "peta" },
+            { value: 1e12, symbol: "tera" },
+            { value: 1e9,  symbol: "giga" },
+            { value: 1e6,  symbol: "méga" },
+            { value: 1e3,  symbol: "kilo" }
+        ];
+        
+        for (const unit of units) {
+            if (value >= unit.value) {
+            return (value / unit.value).toFixed(2) + " " + unit.symbol;
+            }
+        }
+        return value + " bits";
+    }
+
     /********************************
      *  NARRATION (Stanley Parable style)
      ********************************/
      let narrationTriggers = [
-  {
-    id: "narration500",
-    type: 'clicks',
-    value: 500,
-    message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
-             "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
-             "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
-  },
-  {
-    id: "narration1000",
-    type: 'clicks',
-    value: 1000,
-    message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
-             "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
-             "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
-  },
-  {
-    id: "narration100kBits",
-    type: 'bits',
-    value: 100000,
-    message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
-             "Mais, vous savez, tout cela ne signifie rien\n" +
-             "dans l'immensité de l'univers. Bonne journée ! »"
-  },
-  {
-    id: "narration5000",
-    type: 'clicks',
-    value: 5000,
-    message: "« 5000 clics...\n" +
-             "À ce stade, je me demande si vous ne vous\n" +
-             "êtes pas égaré dans votre quête de clics infinis.\n" +
-             "Mais qui suis-je pour juger ? Continuez donc. »"
-  }
-];
+        {
+            id: "narration500",
+            type: 'clicks',
+            value: 500,
+            message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+                    "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+                    "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+        },
+        {
+            id: "narration1000",
+            type: 'clicks',
+            value: 1000,
+            message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+                    "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+                    "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+        },
+        {
+            id: "narration100kBits",
+            type: 'bits',
+            value: 100000,
+            message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+                    "Mais, vous savez, tout cela ne signifie rien\n" +
+                    "dans l'immensité de l'univers. Bonne journée ! »"
+        },
+        {
+            id: "narration5000",
+            type: 'clicks',
+            value: 5000,
+            message: "« 5000 clics...\n" +
+                    "À ce stade, je me demande si vous ne vous\n" +
+                    "êtes pas égaré dans votre quête de clics infinis.\n" +
+                    "Mais qui suis-je pour juger ? Continuez donc. »"
+        }
+    ];
 
 
-function checkNarrationTriggers() {
-  let triggeredIndex = -1;
-  for (let i = 0; i < narrationTriggers.length; i++) {
-    const trig = narrationTriggers[i];
-    // Vérifier si ce trigger a déjà été affiché
-    if (shownNarratorIds.includes(trig.id)) {
-      continue; // passer au suivant
+    function checkNarrationTriggers() {
+        let triggeredIndex = -1;
+        for (let i = 0; i < narrationTriggers.length; i++) {
+            const trig = narrationTriggers[i];
+            // Vérifier si ce trigger a déjà été affiché
+            if (shownNarratorIds.includes(trig.id)) {
+            continue; // passer au suivant
+            }
+            if (trig.type === 'clicks' && clicks >= trig.value) {
+            triggeredIndex = i;
+            break;
+            } else if (trig.type === 'bits' && bits >= trig.value) {
+            triggeredIndex = i;
+            break;
+            }
+        }
+        if (triggeredIndex !== -1) {
+            const trigger = narrationTriggers[triggeredIndex];
+            showNarratorPopup(trigger.message);
+            // Ajouter l'ID du trigger affiché et sauvegarder dans localStorage
+            shownNarratorIds.push(trigger.id);
+            localStorage.setItem('shownNarratorIds', JSON.stringify(shownNarratorIds));
+            // Optionnel : retirer le trigger de la liste si vous ne voulez plus le tester
+            // narrationTriggers.splice(triggeredIndex, 1);
+        }
     }
-    if (trig.type === 'clicks' && clicks >= trig.value) {
-      triggeredIndex = i;
-      break;
-    } else if (trig.type === 'bits' && bits >= trig.value) {
-      triggeredIndex = i;
-      break;
-    }
-  }
-  if (triggeredIndex !== -1) {
-    const trigger = narrationTriggers[triggeredIndex];
-    showNarratorPopup(trigger.message);
-    // Ajouter l'ID du trigger affiché et sauvegarder dans localStorage
-    shownNarratorIds.push(trigger.id);
-    localStorage.setItem('shownNarratorIds', JSON.stringify(shownNarratorIds));
-    // Optionnel : retirer le trigger de la liste si vous ne voulez plus le tester
-    // narrationTriggers.splice(triggeredIndex, 1);
-  }
-}
 
 
     function showNarratorPopup(message) {
-      narratorMessageEl.textContent = message;
-      narratorPopupEl.style.display = 'block';
+        narratorMessageEl.textContent = message;
+        narratorPopupEl.style.display = 'block';
     }
 
     function hideNarratorPopup() {
-      narratorPopupEl.style.display = 'none';
+        narratorPopupEl.style.display = 'none';
     }
 
     /********************************
      *   SAUVEGARDE / CHARGEMENT
      ********************************/
     function saveToLocalStorage() {
-      localStorage.setItem('clicks', clicks.toString());
-      localStorage.setItem('bits',   bits.toString());
+        localStorage.setItem('clicks', clicks.toString());
+        localStorage.setItem('bits', bits.toString());
+        localStorage.setItem('shopItems', JSON.stringify(shopItems));
     }
+
 
     /********************************
      *   MISE À JOUR DU COMPTEUR
      ********************************/
     function updateCounterDisplay() {
-      if(clicks < 200) {
-        counterEl.textContent = clicks;
-      } else {
-        counterEl.textContent = "bits : " + bits.toFixed(2) + "\nclics : " + clicks;
-      }
+        if(clicks < 200) {
+            counterEl.textContent = clicks;
+        } else {
+            counterEl.textContent = "bits : " + formatBits(bits) + "\nclics : " + clicks;
+        }
     }
+
     updateCounterDisplay(); // initial
 
     /********************************
@@ -397,257 +451,293 @@ function checkNarrationTriggers() {
      ********************************/
     // Pop-up secret (100 <= clics < 150)
     function showPopup() {
-      popupEl.style.display = 'block';
-      popupShown = true;
+        popupEl.style.display = 'block';
+        popupShown = true;
     }
     function hidePopup() {
-      popupEl.style.display = 'none';
-      popupShown = false;
+        popupEl.style.display = 'none';
+        popupShown = false;
     }
 
     // Pop-up d’aide du shop
     function showShopHelp() {
-      shopHelpEl.style.display = 'block';
-      shopHelpShown = true;
+        shopHelpEl.style.display = 'block';
+        shopHelpShown = true;
     }
     function hideShopHelp() {
-      shopHelpEl.style.display = 'none';
-      shopHelpShown = false;
+        shopHelpEl.style.display = 'none';
+        shopHelpShown = false;
     }
 
     /********************************
      *     GESTION DU SHOP
      ********************************/
     function showShop() {
-      shopEl.style.display = 'block';
-      renderShopItems();
+        shopEl.style.display = 'block';
+        renderShopItems();
     }
 
     function getItemCost(item) {
-      return Math.floor(item.baseCost * Math.pow(1.15, item.quantity));
+        return Math.floor(item.baseCost * Math.pow(1.15, item.quantity));
     }
 
     function renderShopItems() {
-      let html = '';
-      shopItems.forEach((item, idx) => {
-        const cost = getItemCost(item);
-        const cursor = (idx === selectedShopIndex) ? '<span class="shop-cursor">></span>' : '&nbsp;&nbsp;';
-        html += `
-          <div class="shop-item">
-            ${cursor} ${item.name} (lvl ${item.quantity}) - Coût: ${cost} bits
-          </div>
-        `;
-      });
-      shopItemsEl.innerHTML = html;
+        let html = '';
+        shopItems.forEach((item, idx) => {
+            const cost = getItemCost(item);
+            const cursor = (idx === selectedShopIndex) ? '<span class="shop-cursor">></span>' : '&nbsp;&nbsp;';
+            html += `
+                <div class="shop-item">
+                ${cursor} ${item.name} (lvl ${item.quantity}) - Coût: ${cost} bits
+                </div>
+            `;
+        });
+        shopItemsEl.innerHTML = html;
     }
 
     function buyItem(index) {
-      const item = shopItems[index];
-      const cost = getItemCost(item);
-      if(bits >= cost) {
-        bits -= cost;
-        item.quantity++;
-        applyEffect(item);
-        updateCounterDisplay();
-        saveToLocalStorage();
-        renderShopItems();
-      }
+        const item = shopItems[index];
+        const cost = getItemCost(item);
+        if(bits >= cost) {
+            bits -= cost;
+            item.quantity++;
+            applyEffect(item);
+            updateCounterDisplay();
+            saveToLocalStorage();
+            renderShopItems();
+        }
     }
 
     function applyEffect(item) {
-      if(item.effectType === 'autoClick') {
-        autoClickRate += item.effectValue;
-      } else if(item.effectType === 'multiplier') {
-        totalMultiplier *= item.effectValue;
-      }
+        if(item.effectType === 'autoClick') {
+            autoClickRate += item.effectValue;
+        } else if(item.effectType === 'multiplier') {
+            totalMultiplier *= item.effectValue;
+        } else if(item.effectType === 'clickBonus') {
+            // Bonus permanent ajouté à chaque clic
+            clickBonus += item.effectValue;
+        } else if(item.effectType === 'comboMultiplier') {
+            // Augmente le bonus en combo
+            comboUpgradeBonus += item.effectValue;
+        }
     }
+
 
     /********************************
      *   AUTO-CLICK (CHAQUE SECONDE)
      ********************************/
     setInterval(() => {
-      if(autoClickRate > 0) {
-        for(let i = 0; i < autoClickRate; i++){
-          handleManualClick(false);
+        if(autoClickRate > 0) {
+            for(let i = 0; i < autoClickRate; i++){
+                handleManualClick(false);
+            }
         }
-      }
     }, 1000);
 
     /********************************
      * GESTION DU CLIC MANUEL (ESPACE)
      ********************************/
     function handleManualClick(showFeedback = true) {
-      clicks++;
-      bits += totalMultiplier;
+        const now = Date.now();
+        // Si le clic est suffisamment rapproché du précédent, on augmente le combo
+        if (now - lastClickTime < comboThreshold) {
+            comboCount++;
+        } else {
+            comboCount = 1; // réinitialisation si le délai est trop long
+        }
+        lastClickTime = now;
+        
+        clicks++;
 
-      updateCounterDisplay();
-      saveToLocalStorage();
+        // Calcul du gain de bits :
+        // de base, c'est totalMultiplier + clickBonus
+        let gain = totalMultiplier + clickBonus;
+        // On applique le bonus de combo : chaque clic consécutif multiplie le gain
+        // La formule ici est : 1 + (comboCount - 1) * comboUpgradeBonus
+        gain *= (1 + (comboCount - 1) * comboUpgradeBonus);
+        bits += gain;
+        
+        updateCounterDisplay();
+        saveToLocalStorage();
 
-      if(showFeedback) {
-        clickerEl.classList.add('active');
-        setTimeout(() => {
-          clickerEl.classList.remove('active');
-        }, 150);
-      }
+        if(showFeedback) {
+            clickerEl.classList.add('active');
+            setTimeout(() => {
+            clickerEl.classList.remove('active');
+            }, 150);
+        }
 
-      if(clicks >= 100 && clicks < 150 && !popupShown) {
-        showPopup();
-      }
-      if(clicks >= 150 && popupShown) {
-        hidePopup();
-      }
+        if(clicks >= 100 && clicks < 150 && !popupShown) {
+            showPopup();
+        }
+        if(clicks >= 150 && popupShown) {
+            hidePopup();
+        }
 
-      if(clicks >= 200 && !shopUnlocked) {
-        shopUnlocked = true;
-        showShop();
-        showShopHelp();
-      }
+        if(clicks >= 200 && !shopUnlocked) {
+            shopUnlocked = true;
+            showShop();
+            showShopHelp();
+        }
 
-      checkNarrationTriggers();
+        checkNarrationTriggers();
     }
+
 
     /********************************
      * GESTION DE LA SÉQUENCE TRICHE
      ********************************/
     function handleCheatKey(event) {
-      if (event.shiftKey && event.key.toUpperCase() === 'Q') {
-        const now = Date.now();
-        cheatSequence.push(now);
-        cheatSequence = cheatSequence.filter(t => now - t < cheatTimeout);
-        if (cheatSequence.length >= 5) {
-          cheatSequence = [];
-          showCheatMenu();
+        if (event.shiftKey && event.key.toUpperCase() === 'Q') {
+            const now = Date.now();
+            cheatSequence.push(now);
+            cheatSequence = cheatSequence.filter(t => now - t < cheatTimeout);
+            if (cheatSequence.length >= 5) {
+                cheatSequence = [];
+                showCheatMenu();
+            }
         }
-      }
     }
 
     function showCheatMenu() {
-      cheatMenuEl.style.display = 'flex';
+        cheatMenuEl.style.display = 'flex';
     }
     function hideCheatMenu() {
-      cheatMenuEl.style.display = 'none';
+        cheatMenuEl.style.display = 'none';
     }
 
     /********************************
      *   ÉCOUTEURS D'ÉVÉNEMENTS
      ********************************/
     document.addEventListener('keydown', function(event) {
-      // Espace -> clic manuel
-      if (event.code === 'Space') {
-        event.preventDefault();
-        handleManualClick(true);
-      }
+        // Espace -> clic manuel
+        if (event.code === 'Space') {
+            event.preventDefault();
+            handleManualClick(true);
+        }
 
-      // Enter -> ferme pop-up secret OU narrateur
-      if (event.code === 'Enter') {
-        // Ferme la pop-up secret
-        if(popupShown) {
-          hidePopup();
+        // Enter -> ferme pop-up secret OU narrateur
+        if (event.code === 'Enter') {
+            // Ferme la pop-up secret
+            if(popupShown) {
+                hidePopup();
+            }
+            // Ferme la pop-up narrateur si affichée
+            if(narratorPopupEl.style.display === 'block') {
+                hideNarratorPopup();
+            }
         }
-        // Ferme la pop-up narrateur si affichée
-        if(narratorPopupEl.style.display === 'block') {
-          hideNarratorPopup();
-        }
-      }
 
-      // Détecter la séquence triche
-      handleCheatKey(event);
+        // Détecter la séquence triche
+        handleCheatKey(event);
 
-      // Shop navigation
-      if(shopUnlocked) {
-        if(event.code === 'ArrowUp') {
-          selectedShopIndex--;
-          if(selectedShopIndex < 0) selectedShopIndex = shopItems.length - 1;
-          renderShopItems();
+        // Shop navigation
+        if(shopUnlocked) {
+            if(event.code === 'ArrowUp') {
+                selectedShopIndex--;
+                if(selectedShopIndex < 0) selectedShopIndex = shopItems.length - 1;
+                renderShopItems();
+            }
+            else if(event.code === 'ArrowDown') {
+                selectedShopIndex++;
+                if(selectedShopIndex >= shopItems.length) selectedShopIndex = 0;
+                renderShopItems();
+            }
+            else if(event.key.toUpperCase() === 'V') {
+                if(shopHelpShown) {
+                hideShopHelp();
+                } else {
+                buyItem(selectedShopIndex);
+                }
+            }
         }
-        else if(event.code === 'ArrowDown') {
-          selectedShopIndex++;
-          if(selectedShopIndex >= shopItems.length) selectedShopIndex = 0;
-          renderShopItems();
-        }
-        else if(event.key.toUpperCase() === 'V') {
-          if(shopHelpShown) {
-            hideShopHelp();
-          } else {
-            buyItem(selectedShopIndex);
-          }
-        }
-      }
     });
 
     // Menu de triche : boutons
     document.getElementById('setScoreBtn').addEventListener('click', function() {
-      const newClicks = parseInt(document.getElementById('newClicks').value);
-      const newBits   = parseFloat(document.getElementById('newBits').value);
+        const newClicks = parseInt(document.getElementById('newClicks').value);
+        const newBits   = parseFloat(document.getElementById('newBits').value);
 
-      if (!isNaN(newClicks)) clicks = newClicks;
-      if (!isNaN(newBits))   bits   = newBits;
+        if (!isNaN(newClicks)) clicks = newClicks;
+        if (!isNaN(newBits))   bits   = newBits;
 
-      updateCounterDisplay();
-      saveToLocalStorage();
+        updateCounterDisplay();
+        saveToLocalStorage();
     });
 
     document.getElementById('resetGameBtn').addEventListener('click', function() {
-      clicks = 0;
-      bits   = 0;
-      totalMultiplier = 1;
-      autoClickRate   = 0;
-      shopItems.forEach(i => i.quantity = 0);
-      selectedShopIndex = 0;
-      popupShown        = false;
-      shopUnlocked      = false;
-      shopHelpShown     = false;
+        clicks = 0;
+        bits = 0;
+        totalMultiplier = 1;
+        autoClickRate = 0;
+        clickBonus = 0;
+        comboCount = 0;
+        comboUpgradeBonus = 0;
+        lastClickTime = 0;
+        
+        // Réinitialiser les améliorations
+        shopItems.forEach(i => i.quantity = 0);
+        selectedShopIndex = 0;
+        popupShown = false;
+        shopUnlocked = false;
+        shopHelpShown = false;
 
-      // On réinitialise la narration
-      narrationTriggers = [
-      {
-    id: "narration500",
-    type: 'clicks',
-    value: 500,
-    message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
-             "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
-             "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
-  },
-  {
-    id: "narration1000",
-    type: 'clicks',
-    value: 1000,
-    message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
-             "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
-             "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
-  },
-  {
-    id: "narration100kBits",
-    type: 'bits',
-    value: 100000,
-    message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
-             "Mais, vous savez, tout cela ne signifie rien\n" +
-             "dans l'immensité de l'univers. Bonne journée ! »"
-  },
-  {
-    id: "narration5000",
-    type: 'clicks',
-    value: 5000,
-    message: "« 5000 clics...\n" +
-             "À ce stade, je me demande si vous ne vous\n" +
-             "êtes pas égaré dans votre quête de clics infinis.\n" +
-             "Mais qui suis-je pour juger ? Continuez donc. »"
-  }
-];
+        // Réinitialiser la sauvegarde du shop
+        localStorage.removeItem('shopItems');
 
+        // Réinitialiser la narration
+        narrationTriggers = [
+            {
+                id: "narration500",
+                type: 'clicks',
+                value: 500,
+                message: "« 500 clics ? Vous êtes vraiment déterminé, n'est-ce pas ?\n" +
+                        "Mais dites-moi, pourquoi donc cliquer encore et encore...\n" +
+                        "Est-ce vraiment votre libre arbitre, ou juste un reflex pavlovien ? »"
+            },
+            {
+                id: "narration1000",
+                type: 'clicks',
+                value: 1000,
+                message: "« 1000 clics ! Félicitations. Vous pourriez continuer\n" +
+                        "à cliquer pour l'éternité, mais est-ce que quelqu'un\n" +
+                        "s'en souviendra ? Est-ce que VOUS vous en souviendrez ? »"
+            },
+            {
+                id: "narration100kBits",
+                type: 'bits',
+                value: 100000,
+                message: "« Ah, vous avez accumulé 100k bits. Impressionnant.\n" +
+                        "Mais, vous savez, tout cela ne signifie rien\n" +
+                        "dans l'immensité de l'univers. Bonne journée ! »"
+            },
+            {
+                id: "narration5000",
+                type: 'clicks',
+                value: 5000,
+                message: "« 5000 clics...\n" +
+                        "À ce stade, je me demande si vous ne vous\n" +
+                        "êtes pas égaré dans votre quête de clics infinis.\n" +
+                        "Mais qui suis-je pour juger ? Continuez donc. »"
+            }
+        ];
+        // Supprimer les identifiants des narrations déjà affichées
+        localStorage.removeItem('shownNarratorIds');
+        shownNarratorIds = [];
 
-      hidePopup();
-      hideShopHelp();
-      hideNarratorPopup();
-      shopEl.style.display = 'none';
+        hidePopup();
+        hideShopHelp();
+        hideNarratorPopup();
+        shopEl.style.display = 'none';
 
-      updateCounterDisplay();
-      saveToLocalStorage();
-      renderShopItems();
+        updateCounterDisplay();
+        saveToLocalStorage();
+        renderShopItems();
     });
 
+
     document.getElementById('closeCheatBtn').addEventListener('click', function() {
-      hideCheatMenu();
+        hideCheatMenu();
     });
   </script>
 </body>
