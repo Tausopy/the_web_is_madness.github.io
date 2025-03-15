@@ -12,6 +12,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            font-size: 1.2vw;
             font-family: monospace;
             overflow: hidden;
             cursor: none;
@@ -28,7 +29,7 @@
             width: 100%;
             height: 100%;
             color: #0c8001;
-            font-size: 20px;
+            font-size: 1.5vw;
             white-space: pre;
             overflow: hidden;
         }
@@ -38,7 +39,7 @@
         }
         .ascii-art {
             white-space: pre;
-            font-size: 20px;
+            font-size: 1.5vw;
             line-height: 0.57;
             position: relative;
             z-index: 1;
@@ -100,6 +101,40 @@
         .red-mode .selected {
         color: #a00000 !important;
         }
+        @media (max-width: 768px) {
+          body {
+              font-size: 2.5vw;
+              overflow: auto; /* Désactiver overflow hidden sur petits écrans */
+          }
+
+          .ascii-art {
+              font-size: 3vw;
+              line-height: 1; /* Ajuste l'espace entre les lignes pour petits écrans */
+          }
+
+          .menu {
+              right: 20px;
+              font-size: 3vw;
+          }
+
+          .tutorial-box {
+              left: 20px;
+              font-size: 2vw;
+          }
+        }
+
+        @media (max-width: 480px) {
+            .menu {
+                right: 10px;
+                font-size: 4vw;
+            }
+
+            .tutorial-box {
+                left: 10px;
+                font-size: 2.5vw;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -433,4 +468,3 @@
     </script>
 </body>
 </html>
-
